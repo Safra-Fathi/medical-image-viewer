@@ -115,3 +115,9 @@ src/assets/Anonymized_20260806/
 # ==========================
 
 project-source.txt
+
+# ==========================
+# LOCAL DATABASE
+# ==========================
+
+backend/users.db
