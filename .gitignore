@@ -1,0 +1,117 @@
+# ==========================
+# FRONTEND
+# ==========================
+
+node_modules/
+dist/
+.vite/
+
+
+# ==========================
+# PYTHON
+# ==========================
+
+venv/
+.venv/
+tfjs_convert_env/
+__pycache__/
+*.py[cod]
+
+
+# ==========================
+# ENVIRONMENT FILES
+# ==========================
+
+.env
+.env.*
+!.env.example
+
+
+# ==========================
+# JUPYTER
+# ==========================
+
+.ipynb_checkpoints/
+
+
+# ==========================
+# TRAINING DATASET
+# ==========================
+
+Training model/lgg-mri-segmentation/
+Training model/kaggle_3m/
+
+# Medical image files
+*.dcm
+*.nii
+*.nii.gz
+*.tif
+*.tiff
+*.npy
+
+
+# ==========================
+# TRAINED MODEL
+# ==========================
+
+Training model/*.keras
+Training model/**/*.keras
+
+
+# ==========================
+# OTHER LARGE FILES
+# ==========================
+
+archive.zip
+
+
+# ==========================
+# LOGS
+# ==========================
+
+*.log
+
+
+# ==========================
+# TYPESCRIPT / BUILD CACHE
+# ==========================
+
+*.tsbuildinfo
+
+
+# ==========================
+# GENERATED VITE FILES
+# ==========================
+
+vite.config.js
+vite.config.d.ts
+
+
+# ==========================
+# IDE
+# ==========================
+
+.vscode/
+.idea/
+
+
+# ==========================
+# OPERATING SYSTEM
+# ==========================
+
+.DS_Store
+Thumbs.db
+
+
+# ==========================
+# LOCAL MEDICAL IMAGES
+# ==========================
+
+src/assets/Anonymized_20260806/
+
+
+# ==========================
+# PROJECT SOURCE EXPORT
+# ==========================
+
+project-source.txt

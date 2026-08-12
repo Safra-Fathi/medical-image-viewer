@@ -1,0 +1,152 @@
+.controls {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  padding: 16px;
+  background: var(--bg-panel);
+  border-left: 1px solid var(--border-hairline);
+  overflow-y: auto;
+  height: 100%;
+}
+
+.controls--empty {
+  align-items: center;
+  justify-content: center;
+  color: var(--text-tertiary);
+  font-size: 12.5px;
+  font-family: var(--font-mono);
+}
+
+.controls__section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--border-hairline);
+}
+
+.controls__section:last-child {
+  border-bottom: none;
+}
+
+.controls__title {
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.controls__row {
+  display: flex;
+  align-items: center;
+}
+
+.controls__row--split {
+  justify-content: space-between;
+}
+
+.controls__label {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  font-size: 11.5px;
+  color: var(--text-tertiary);
+  font-family: var(--font-mono);
+}
+
+.controls__value {
+  font-size: 11px;
+  font-family: var(--font-mono);
+  color: var(--text-tertiary);
+  text-align: right;
+}
+
+.controls__zoomval {
+  font-size: 11px;
+  font-family: var(--font-mono);
+  color: var(--text-secondary);
+  min-width: 38px;
+  text-align: center;
+}
+
+.controls__btngroup {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.controls__btngroup button,
+.controls__iconbtn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: var(--bg-panel-raised);
+  border: 1px solid var(--border-hairline);
+  color: var(--text-secondary);
+  border-radius: var(--radius-sm);
+  padding: 5px 8px;
+  cursor: pointer;
+  font-size: 10.5px;
+  font-family: var(--font-mono);
+  transition: color 0.15s ease, border-color 0.15s ease;
+}
+
+.controls__btngroup button:hover,
+.controls__iconbtn:hover {
+  color: var(--text-primary);
+  border-color: var(--text-tertiary);
+}
+
+.controls__iconbtn--on {
+  color: var(--accent);
+  border-color: var(--accent-dim);
+}
+
+/* ===========================
+   Professional Viewer Toolbar
+=========================== */
+
+.viewer-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 10px;
+  margin-bottom: 18px;
+  background: var(--bg-panel-raised);
+  border: 1px solid var(--border-hairline);
+  border-radius: var(--radius-md);
+}
+
+.viewer-toolbar button {
+  width: 38px;
+  height: 38px;
+  border: 1px solid var(--border-hairline);
+  background: transparent;
+  color: var(--text-secondary);
+  border-radius: var(--radius-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.viewer-toolbar button:hover {
+  background: var(--accent);
+  color: white;
+  border-color: var(--accent);
+  transform: translateY(-1px);
+}
+
+.viewer-toolbar button:active {
+  transform: scale(0.96);
+}
+
+.viewer-toolbar button svg {
+  width: 18px;
+  height: 18px;
+}

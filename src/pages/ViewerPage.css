@@ -1,0 +1,151 @@
+.viewer {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  background: var(--bg-void);
+}
+
+.viewer__uploadbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  padding: 12px 20px;
+  border-bottom: 1px solid var(--border-hairline);
+  background: var(--bg-panel);
+  flex-shrink: 0;
+  flex-wrap: wrap;
+}
+
+.viewer__uploadbar-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--text-tertiary);
+  white-space: nowrap;
+}
+
+.viewer__uploads {
+  display: flex;
+  gap: 10px;
+  flex: 1;
+  max-width: 720px;
+  min-width: 320px;
+}
+
+.viewer__uploads > * {
+  flex: 1;
+}
+
+.viewer__error {
+  background: rgba(224, 72, 62, 0.12);
+  color: #f0958c;
+  font-size: 12.5px;
+  font-family: var(--font-mono);
+  padding: 8px 20px;
+  border-bottom: 1px solid var(--border-hairline);
+}
+
+.viewer__loading {
+  background: var(--accent-glow);
+  color: var(--accent);
+  font-size: 12.5px;
+  font-family: var(--font-mono);
+  padding: 6px 20px;
+  border-bottom: 1px solid var(--border-hairline);
+}
+
+.viewer__main {
+  flex: 1;
+  display: flex;
+  min-height: 0;
+}
+
+.viewer__viewport {
+  flex: 1;
+  min-width: 0;
+  padding: 14px;
+}
+
+.viewer__mpr-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: 1fr 1fr;
+  gap: 10px;
+  height: 100%;
+}
+
+.viewer__mpr-info {
+  background: var(--bg-panel);
+  border: 1px solid var(--border-hairline);
+  border-radius: var(--radius-md);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 4px;
+  color: var(--text-tertiary);
+  font-family: var(--font-mono);
+  font-size: 11px;
+}
+
+.viewer__mpr-info-title {
+  color: var(--text-secondary);
+  font-size: 12px;
+}
+
+.viewer__sidebar {
+  width: 280px;
+  flex-shrink: 0;
+}
+
+@media (max-width: 900px) {
+  .viewer__main {
+    flex-direction: column;
+  }
+  .viewer__sidebar {
+    width: 100%;
+  }
+  .viewer__mpr-grid {
+    grid-template-columns: 1fr;
+    grid-template-rows: repeat(3, 1fr);
+  }
+  .viewer__download-report {
+  width: 100%;
+  margin-top: 14px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+
+  padding: 10px 14px;
+
+  border: none;
+  border-radius: 8px;
+
+  background: #2563eb;
+  color: white;
+
+  font-size: 13px;
+  font-weight: 600;
+
+  cursor: pointer;
+
+  transition:
+    background 0.2s ease,
+    transform 0.1s ease;
+}
+
+.viewer__download-report:hover {
+  background: #1d4ed8;
+}
+
+.viewer__download-report:active {
+  transform: translateY(1px);
+}
+}

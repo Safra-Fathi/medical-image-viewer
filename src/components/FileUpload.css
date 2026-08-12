@@ -1,0 +1,84 @@
+.file-drop {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  border: 1px dashed var(--border-hairline);
+  border-radius: var(--radius-md);
+  background: var(--bg-inset);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.file-drop:hover {
+  border-color: var(--text-tertiary);
+}
+
+.file-drop--dragging {
+  border-color: var(--accent);
+  background: var(--accent-glow);
+}
+
+.file-drop--loaded {
+  border-style: solid;
+  border-color: var(--border-hairline);
+  color: var(--text-primary);
+}
+
+.file-drop--image.file-drop--loaded {
+  border-left: 2px solid var(--accent);
+}
+
+.file-drop--mask.file-drop--loaded {
+  border-left: 2px solid var(--mask-red);
+}
+
+.file-drop__badge {
+  position: absolute;
+  top: -8px;
+  left: 10px;
+  font-size: 9.5px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  background: var(--bg-panel);
+  padding: 0 6px;
+  color: var(--text-tertiary);
+}
+
+.file-drop__meta {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  flex: 1;
+}
+
+.file-drop__name {
+  font-size: 13px;
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.file-drop__dims {
+  font-size: 11px;
+  color: var(--text-tertiary);
+  font-family: var(--font-mono);
+}
+
+.file-drop__clear {
+  background: none;
+  border: none;
+  color: var(--text-tertiary);
+  cursor: pointer;
+  padding: 4px;
+  display: flex;
+  border-radius: var(--radius-sm);
+}
+
+.file-drop__clear:hover {
+  color: var(--text-primary);
+  background: var(--bg-panel-raised);
+}

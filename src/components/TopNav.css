@@ -1,0 +1,77 @@
+.topnav {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  padding: 10px 20px;
+  border-bottom: 1px solid var(--border-hairline);
+  background: var(--bg-panel);
+  flex-shrink: 0;
+}
+
+.topnav__brand {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+  font-size: 13.5px;
+  color: var(--accent);
+  white-space: nowrap;
+}
+
+.topnav__tabs {
+  display: flex;
+  gap: 4px;
+  flex: 1;
+}
+
+.topnav__tab {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: none;
+  border: 1px solid transparent;
+  color: var(--text-tertiary);
+  padding: 6px 12px;
+  border-radius: var(--radius-sm);
+  font-size: 12.5px;
+  cursor: pointer;
+  transition: color 0.15s ease, background 0.15s ease;
+}
+
+.topnav__tab:hover {
+  color: var(--text-secondary);
+}
+
+.topnav__tab--active {
+  color: var(--accent);
+  background: var(--accent-glow);
+  border-color: var(--accent-dim);
+}
+
+.topnav__user {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.topnav__user-name {
+  font-size: 12px;
+  color: var(--text-secondary);
+  font-family: var(--font-mono);
+}
+
+.topnav__logout {
+  display: flex;
+  align-items: center;
+  background: var(--bg-panel-raised);
+  border: 1px solid var(--border-hairline);
+  color: var(--text-tertiary);
+  padding: 6px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+}
+
+.topnav__logout:hover {
+  color: var(--text-primary);
+  border-color: var(--text-tertiary);
+}
