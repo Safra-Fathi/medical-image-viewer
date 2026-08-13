@@ -41,6 +41,39 @@
   flex: 1;
 }
 
+/* ---------------------------------------------------------
+   Backend status chip
+--------------------------------------------------------- */
+
+.viewer__status {
+  display: flex;
+  padding: 8px 20px;
+  border-bottom: 1px solid var(--border-hairline);
+  background: var(--bg-panel);
+}
+
+.viewer__backend-status {
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  letter-spacing: 0.02em;
+  color: var(--text-tertiary);
+  padding: 4px 10px;
+  border-radius: var(--radius-sm, 4px);
+  border: 1px solid var(--border-hairline);
+}
+
+.viewer__backend-status--connected {
+  color: #6ee7b7;
+  background: rgba(52, 211, 153, 0.1);
+  border-color: rgba(52, 211, 153, 0.25);
+}
+
+.viewer__backend-status--failed {
+  color: #f0958c;
+  background: rgba(224, 72, 62, 0.12);
+  border-color: rgba(224, 72, 62, 0.25);
+}
+
 .viewer__error {
   background: rgba(224, 72, 62, 0.12);
   color: #f0958c;
@@ -101,22 +134,140 @@
 .viewer__sidebar {
   width: 280px;
   flex-shrink: 0;
+  padding: 14px 14px 14px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  overflow-y: auto;
 }
 
-@media (max-width: 900px) {
-  .viewer__main {
-    flex-direction: column;
-  }
-  .viewer__sidebar {
-    width: 100%;
-  }
-  .viewer__mpr-grid {
-    grid-template-columns: 1fr;
-    grid-template-rows: repeat(3, 1fr);
-  }
-  .viewer__download-report {
+/* ---------------------------------------------------------
+   AI panel
+--------------------------------------------------------- */
+
+.viewer__ai-panel {
+  background: var(--bg-panel);
+  border: 1px solid var(--border-hairline);
+  border-radius: var(--radius-md);
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.viewer__ai-title {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-tertiary);
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--border-hairline);
+}
+
+.viewer__ai-button {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--bg-void);
+  background: var(--accent);
+  border: none;
+  border-radius: var(--radius-sm, 4px);
+  padding: 10px 14px;
+  cursor: pointer;
+  transition: opacity 0.15s ease, transform 0.1s ease;
+}
+
+.viewer__ai-button:hover:not(:disabled) {
+  opacity: 0.85;
+}
+
+.viewer__ai-button:active:not(:disabled) {
+  transform: translateY(1px);
+}
+
+.viewer__ai-button:disabled {
+  background: var(--border-hairline);
+  color: var(--text-tertiary);
+  cursor: not-allowed;
+}
+
+.viewer__ai-hint {
+  font-size: 12px;
+  color: var(--text-tertiary);
+  margin: -4px 0 0 0;
+}
+
+.viewer__ai-error {
+  background: rgba(224, 72, 62, 0.12);
+  color: #f0958c;
+  font-size: 12.5px;
+  font-family: var(--font-mono);
+  padding: 8px 10px;
+  border-radius: var(--radius-sm, 4px);
+  border: 1px solid rgba(224, 72, 62, 0.25);
+}
+
+.viewer__ai-result {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding-top: 2px;
+  border-top: 1px solid var(--border-hairline);
+}
+
+.viewer__ai-result-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #6ee7b7;
+}
+
+.viewer__ai-result-title::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #6ee7b7;
+  box-shadow: 0 0 0 3px rgba(52, 211, 153, 0.15);
+  flex-shrink: 0;
+}
+
+.viewer__ai-stat {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--text-tertiary);
+  background: var(--bg-void);
+  border: 1px solid var(--border-hairline);
+  border-radius: var(--radius-sm, 4px);
+  padding: 7px 9px;
+}
+
+.viewer__ai-stat strong {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-secondary);
+}
+
+.viewer__ai-mask {
   width: 100%;
-  margin-top: 14px;
+  aspect-ratio: 1 / 1;
+  object-fit: contain;
+  background: #000;
+  border: 1px solid var(--border-hairline);
+  border-radius: var(--radius-sm, 4px);
+  padding: 6px;
+  box-sizing: border-box;
+}
+
+.viewer__download-report {
+  width: 100%;
+  margin-top: 4px;
 
   display: flex;
   align-items: center;
@@ -148,4 +299,16 @@
 .viewer__download-report:active {
   transform: translateY(1px);
 }
+
+@media (max-width: 900px) {
+  .viewer__main {
+    flex-direction: column;
+  }
+  .viewer__sidebar {
+    width: 100%;
+  }
+  .viewer__mpr-grid {
+    grid-template-columns: 1fr;
+    grid-template-rows: repeat(3, 1fr);
+  }
 }

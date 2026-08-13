@@ -136,7 +136,7 @@ export default function ViewerPage() {
   // DOWNLOAD PDF REPORT
   // ==========================================
 
-  const downloadAnalysisReport = () => {
+const downloadAnalysisReport = () => {
     if (!aiResult) {
       alert(
         'Please run AI segmentation before downloading the report.'
@@ -147,80 +147,67 @@ export default function ViewerPage() {
 
     const doc = new jsPDF();
 
-    const pageWidth =
-      doc.internal.pageSize.getWidth();
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const pageHeight = doc.internal.pageSize.getHeight();
+    const bottomMargin = 18;
 
-    const pageHeight =
-      doc.internal.pageSize.getHeight();
+    let y = 0;
+
+    // ========================================
+    // PAGE-BREAK SAFETY NET
+    // Layout below is tuned to fit one page for a
+    // normal-length report; this only kicks in if
+    // the AI message is unusually long.
+    // ========================================
+
+    const ensureSpace = (neededHeight: number) => {
+      if (y + neededHeight > pageHeight - bottomMargin) {
+        doc.addPage();
+        y = 22;
+      }
+    };
 
     // ========================================
     // HEADER
     // ========================================
 
-    doc.setFontSize(20);
+    y = 22;
 
-    doc.setFont(
-      'helvetica',
-      'bold'
-    );
+    doc.setFontSize(17);
+    doc.setFont('helvetica', 'bold');
+    doc.text('Medical Image Analysis Report', pageWidth / 2, y, {
+      align: 'center',
+    });
 
-    doc.text(
-      'Medical Image Analysis Report',
-      pageWidth / 2,
-      25,
-      {
-        align: 'center',
-      }
-    );
+    y += 7;
 
-    doc.setFontSize(10);
-
-    doc.setFont(
-      'helvetica',
-      'normal'
-    );
-
+    doc.setFontSize(9);
+    doc.setFont('helvetica', 'normal');
     doc.text(
       `Generated: ${new Date().toLocaleString()}`,
       pageWidth / 2,
-      34,
-      {
-        align: 'center',
-      }
+      y,
+      { align: 'center' }
     );
 
-    doc.line(
-      20,
-      42,
-      pageWidth - 20,
-      42
-    );
+    y += 6;
+    doc.line(20, y, pageWidth - 20, y);
 
     // ========================================
     // IMAGE INFORMATION
     // ========================================
 
-    doc.setFontSize(15);
+    y += 10;
+    ensureSpace(22);
 
-    doc.setFont(
-      'helvetica',
-      'bold'
-    );
+    doc.setFontSize(12.5);
+    doc.setFont('helvetica', 'bold');
+    doc.text('Image Information', 20, y);
 
-    doc.text(
-      'Image Information',
-      20,
-      55
-    );
+    y += 8;
 
-    doc.setFontSize(11);
-
-    doc.setFont(
-      'helvetica',
-      'normal'
-    );
-
-    let y = 67;
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'normal');
 
     doc.text(
       `File: ${
@@ -232,12 +219,11 @@ export default function ViewerPage() {
       y
     );
 
-    y += 9;
+    y += 6.5;
 
     doc.text(
       `Dimensions: ${
-        imageFile?.volume.dims?.join(' × ') ??
-        'Unknown'
+        imageFile?.volume.dims?.join(' × ') ?? 'Unknown'
       }`,
       20,
       y
@@ -247,45 +233,25 @@ export default function ViewerPage() {
     // AI ANALYSIS
     // ========================================
 
-    y += 20;
+    y += 13;
+    ensureSpace(38);
 
-    doc.setFontSize(15);
+    doc.setFontSize(12.5);
+    doc.setFont('helvetica', 'bold');
+    doc.text('AI Analysis', 20, y);
 
-    doc.setFont(
-      'helvetica',
-      'bold'
-    );
+    y += 8;
 
-    doc.text(
-      'AI Analysis',
-      20,
-      y
-    );
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'normal');
 
-    y += 12;
+    doc.text('Model: U-Net Brain Tumor Segmentation', 20, y);
 
-    doc.setFontSize(11);
+    y += 6.5;
 
-    doc.setFont(
-      'helvetica',
-      'normal'
-    );
+    doc.text(`Segmentation Threshold: ${aiResult.threshold}`, 20, y);
 
-    doc.text(
-      'Model: U-Net Brain Tumor Segmentation',
-      20,
-      y
-    );
-
-    y += 9;
-
-    doc.text(
-      `Segmentation Threshold: ${aiResult.threshold}`,
-      20,
-      y
-    );
-
-    y += 9;
+    y += 6.5;
 
     doc.text(
       `Tumor Pixels: ${aiResult.tumorPixels.toLocaleString()}`,
@@ -293,7 +259,7 @@ export default function ViewerPage() {
       y
     );
 
-    y += 9;
+    y += 6.5;
 
     doc.text(
       `Tumor Area: ${aiResult.tumorPercentage.toFixed(2)}%`,
@@ -305,192 +271,128 @@ export default function ViewerPage() {
     // RESULT
     // ========================================
 
-    y += 20;
+    y += 13;
+    ensureSpace(18);
 
-    doc.setFontSize(15);
+    doc.setFontSize(12.5);
+    doc.setFont('helvetica', 'bold');
+    doc.text('Segmentation Result', 20, y);
 
-    doc.setFont(
-      'helvetica',
-      'bold'
-    );
+    y += 8;
 
-    doc.text(
-      'Segmentation Result',
-      20,
-      y
-    );
+    doc.setFontSize(10.5);
+    doc.setFont('helvetica', 'normal');
 
-    y += 12;
-
-    doc.setFontSize(12);
-
-    doc.setFont(
-      'helvetica',
-      'normal'
-    );
-
-    const tumorDetected =
-      aiResult.tumorPixels > 0;
+    const tumorDetected = aiResult.tumorPixels > 0;
 
     doc.text(
-      `Tumor Region Detected: ${
-        tumorDetected ? 'Yes' : 'No'
-      }`,
+      `Tumor Region Detected: ${tumorDetected ? 'Yes' : 'No'}`,
       20,
       y
     );
 
     // ========================================
     // SEGMENTATION MASK
+    // Smaller thumbnail (65x65mm instead of
+    // 100x100mm) so the whole report fits one page.
     // ========================================
 
-    y += 18;
+    y += 12;
+    const maskSize = 65;
+    ensureSpace(8 + maskSize + 6);
 
-    doc.setFontSize(15);
-
-    doc.setFont(
-      'helvetica',
-      'bold'
-    );
-
-    doc.text(
-      'AI Segmentation Mask',
-      20,
-      y
-    );
+    doc.setFontSize(12.5);
+    doc.setFont('helvetica', 'bold');
+    doc.text('AI Segmentation Mask', 20, y);
 
     try {
-      doc.addImage(
-        aiResult.mask,
-        'PNG',
-        20,
-        y + 8,
-        100,
-        100
-      );
+      doc.addImage(aiResult.mask, 'PNG', 20, y + 6, maskSize, maskSize);
     } catch (error) {
-      console.error(
-        'Failed to add segmentation mask to PDF:',
-        error
-      );
+      console.error('Failed to add segmentation mask to PDF:', error);
     }
+
+    y += 6 + maskSize;
 
     // ========================================
     // ANALYSIS MESSAGE
     // ========================================
 
-    y += 125;
-
-    doc.setFontSize(13);
-
-    doc.setFont(
-      'helvetica',
-      'bold'
-    );
-
-    doc.text(
-      'Analysis Message',
-      20,
-      y
-    );
-
-    y += 9;
-
-    doc.setFontSize(10);
-
-    doc.setFont(
-      'helvetica',
-      'normal'
-    );
+    y += 10;
 
     const message =
-      aiResult.message ||
-      'Analysis completed successfully.';
+      aiResult.message || 'Analysis completed successfully.';
 
-    const messageLines =
-      doc.splitTextToSize(
-        message,
-        pageWidth - 40
-      );
+    doc.setFontSize(9);
+    doc.setFont('helvetica', 'normal');
+    const messageLines = doc.splitTextToSize(message, pageWidth - 40);
 
-    doc.text(
-      messageLines,
-      20,
-      y
-    );
+    ensureSpace(8 + messageLines.length * 4.5);
+
+    doc.setFontSize(11);
+    doc.setFont('helvetica', 'bold');
+    doc.text('Analysis Message', 20, y);
+
+    y += 6.5;
+
+    doc.setFontSize(9);
+    doc.setFont('helvetica', 'normal');
+    doc.text(messageLines, 20, y);
 
     // ========================================
     // DISCLAIMER
     // ========================================
 
-    y +=
-      messageLines.length * 6 +
-      15;
-
-    doc.setFontSize(12);
-
-    doc.setFont(
-      'helvetica',
-      'bold'
-    );
-
-    doc.text(
-      'Important Notice',
-      20,
-      y
-    );
-
-    y += 8;
-
-    doc.setFontSize(9);
-
-    doc.setFont(
-      'helvetica',
-      'normal'
-    );
+    y += messageLines.length * 4.5 + 10;
 
     const disclaimer =
       'This report is generated by an AI-assisted image segmentation system for demonstration and research purposes. It is not a medical diagnosis and should not be used as a substitute for assessment by a qualified healthcare professional.';
 
-    const disclaimerLines =
-      doc.splitTextToSize(
-        disclaimer,
-        pageWidth - 40
-      );
-
-    doc.text(
-      disclaimerLines,
-      20,
-      y
+    doc.setFontSize(8);
+    doc.setFont('helvetica', 'normal');
+    const disclaimerLines = doc.splitTextToSize(
+      disclaimer,
+      pageWidth - 40
     );
 
-    // ========================================
-    // FOOTER
-    // ========================================
+    ensureSpace(6 + disclaimerLines.length * 4);
+
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'bold');
+    doc.text('Important Notice', 20, y);
+
+    y += 6;
 
     doc.setFontSize(8);
+    doc.setFont('helvetica', 'normal');
+    doc.text(disclaimerLines, 20, y);
 
-    doc.text(
-      'Medical Image Viewer - AI Analysis',
-      pageWidth / 2,
-      pageHeight - 12,
-      {
-        align: 'center',
-      }
-    );
+    // ========================================
+    // FOOTER — stamped on every page
+    // ========================================
+
+    const pageCount = doc.internal.pages.length - 1;
+
+    for (let i = 1; i <= pageCount; i++) {
+      doc.setPage(i);
+      doc.setFontSize(7.5);
+      doc.setFont('helvetica', 'normal');
+      doc.text(
+        'Medical Image Viewer - AI Analysis',
+        pageWidth / 2,
+        pageHeight - 10,
+        { align: 'center' }
+      );
+    }
 
     // ========================================
     // DOWNLOAD
     // ========================================
 
-    const timestamp =
-      new Date()
-        .toISOString()
-        .replace(/[:.]/g, '-');
+    const timestamp = new Date()
+      .toISOString()
+      .replace(/[:.]/g, '-');
 
-    doc.save(
-      `medical-analysis-report-${timestamp}.pdf`
-    );
+    doc.save(`medical-analysis-report-${timestamp}.pdf`);
   };
 
   // ==========================================

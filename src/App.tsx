@@ -11,13 +11,15 @@ export type AppView = 'viewer' | 'dashboard';
 function App() {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
 
-  // Change this to dashboard if you want Dashboard to open first
-const [view, setView] = useState<AppView>('dashboard');
+  // Authenticated users start on Dashboard
+  const [view, setView] = useState<AppView>('dashboard');
 
+  // User is not logged in → show Login page
   if (!isAuthenticated) {
     return <LoginPage />;
   }
 
+  // User is logged in → show the application
   return (
     <div className="shell">
       <TopNav view={view} onChangeView={setView} />

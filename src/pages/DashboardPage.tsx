@@ -10,6 +10,7 @@ const FORMAT_LABELS: Record<FileFormat, string> = {
   dicom: 'DICOM (.dcm)',
   image: 'Image (.png/.jpg)',
   unknown: 'Unknown',
+  tiff: 'TIFF (.tif/.tiff)',
 };
 
 function formatDate(ts: number | null): string {
