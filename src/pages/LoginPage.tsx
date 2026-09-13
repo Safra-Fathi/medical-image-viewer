@@ -1,4 +1,5 @@
 import { useState } from 'react';
+
 import {
   Activity,
   Lock,
@@ -18,6 +19,7 @@ import { useAnalyticsStore } from '../store/analyticsStore';
 
 import './LoginPage.css';
 
+
 const FEATURES = [
   {
     icon: FileStack,
@@ -33,25 +35,20 @@ const FEATURES = [
   },
 ];
 
+
 export default function LoginPage() {
-  // ============================================================
-  // FORM MODE
-  // ============================================================
 
   const [isRegistering, setIsRegistering] =
     useState(false);
 
-  // ============================================================
-  // FORM VALUES
-  // ============================================================
+  const [name, setName] =
+    useState('');
 
-  const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [email, setEmail] =
+    useState('');
 
-  // ============================================================
-  // UI STATE
-  // ============================================================
+  const [password, setPassword] =
+    useState('');
 
   const [showPassword, setShowPassword] =
     useState(false);
@@ -65,105 +62,105 @@ export default function LoginPage() {
   const [submitting, setSubmitting] =
     useState(false);
 
-  // ============================================================
-  // AUTH STORE
-  // ============================================================
 
-  const login = useAuthStore(
-    (state) => state.login
-  );
+  const login =
+    useAuthStore(
+      (state) => state.login
+    );
 
-  const register = useAuthStore(
-    (state) => state.register
-  );
 
-  // ============================================================
-  // ANALYTICS
-  // ============================================================
+  const register =
+    useAuthStore(
+      (state) => state.register
+    );
 
-  const recordLogin = useAnalyticsStore(
-    (state) => state.recordLogin
-  );
+
+  const recordLogin =
+    useAnalyticsStore(
+      (state) => state.recordLogin
+    );
+
 
   // ============================================================
   // SUBMIT
   // ============================================================
 
   const handleSubmit = async (
-    e: React.FormEvent<HTMLFormElement>
+    event: React.FormEvent<HTMLFormElement>
   ) => {
-    e.preventDefault();
+
+    event.preventDefault();
 
     setError(null);
     setSubmitting(true);
 
+
     try {
+
       let result;
 
-      // --------------------------------------------------------
-      // REGISTER
-      // --------------------------------------------------------
 
       if (isRegistering) {
-        result = await register(
-          name,
-          email,
-          password
-        );
+
+        result =
+          await register(
+            name,
+            email,
+            password
+          );
+
+      } else {
+
+        result =
+          await login(
+            email,
+            password
+          );
       }
 
-      // --------------------------------------------------------
-      // LOGIN
-      // --------------------------------------------------------
-
-      else {
-        result = await login(
-          email,
-          password
-        );
-      }
-
-      // --------------------------------------------------------
-      // SUCCESS
-      // --------------------------------------------------------
 
       if (result.success) {
+
         recordLogin();
-      }
 
-      // --------------------------------------------------------
-      // ERROR
-      // --------------------------------------------------------
+      } else {
 
-      else {
         setError(
           result.error ??
-            (
-              isRegistering
-                ? 'Registration failed.'
-                : 'Login failed.'
-            )
+          (
+            isRegistering
+              ? 'Registration failed.'
+              : 'Login failed.'
+          )
         );
       }
+
     } catch (err) {
+
       console.error(
         'Authentication error:',
         err
       );
 
+
       setError(
         'Something went wrong. Please try again.'
       );
+
     } finally {
+
       setSubmitting(false);
+
     }
   };
 
+
   // ============================================================
-  // SWITCH LOGIN / REGISTER
+  // SWITCH MODE
   // ============================================================
 
   const switchMode = () => {
+
     setIsRegistering(
       (current) => !current
     );
@@ -175,31 +172,32 @@ export default function LoginPage() {
     setShowPassword(false);
   };
 
+
   // ============================================================
   // UI
   // ============================================================
 
   return (
+
     <div className="login">
 
-      {/* ======================================================
+      {/* ========================================================
           LEFT BRAND PANEL
-      ====================================================== */}
+      ======================================================== */}
 
-      <div className="login__panel login__panel--brand">
+      <section className="login__panel login__panel--brand">
 
-        {/* Background scanner grid */}
+        <div className="login__scan-grid" />
 
-        <div className="login__scan-grid"></div>
-
-        {/* Brand Logo */}
 
         <div className="login__brand-mark">
 
-          <Activity
-            size={24}
-            strokeWidth={2}
-          />
+          <div className="login__brand-icon">
+            <Activity
+              size={24}
+              strokeWidth={2}
+            />
+          </div>
 
           <span>
             MedVision AI
@@ -207,14 +205,15 @@ export default function LoginPage() {
 
         </div>
 
-        {/* Hero Section */}
 
         <div className="login__hero">
 
-          <ScanLine
-            size={42}
-            strokeWidth={1.5}
-          />
+          <div className="login__hero-icon">
+            <ScanLine
+              size={44}
+              strokeWidth={1.5}
+            />
+          </div>
 
           <h1>
             AI-Powered Medical Imaging Platform
@@ -227,7 +226,6 @@ export default function LoginPage() {
 
         </div>
 
-        {/* Features */}
 
         <ul className="login__features">
 
@@ -236,7 +234,9 @@ export default function LoginPage() {
 
               <li key={text}>
 
-                <Icon size={17} />
+                <span className="login__feature-icon">
+                  <Icon size={17} />
+                </span>
 
                 <span>
                   {text}
@@ -249,13 +249,13 @@ export default function LoginPage() {
 
         </ul>
 
-        {/* Footer */}
 
         <div className="login__footer">
 
           <div className="login__footnote">
 
             Secure medical imaging workspace
+
             <br />
 
             © 2026 MedVision AI
@@ -264,91 +264,120 @@ export default function LoginPage() {
 
         </div>
 
-      </div>
+      </section>
 
-      {/* ======================================================
+
+      {/* ========================================================
           RIGHT FORM PANEL
-      ====================================================== */}
+      ======================================================== */}
 
-      <div className="login__panel login__panel--form">
+      <section className="login__panel login__panel--form">
 
         <form
           className="login__card"
           onSubmit={handleSubmit}
         >
 
-          {/* ==================================================
-              TITLE
-          ================================================== */}
+          <div className="login__form-heading">
 
-          <h2>
-            {isRegistering
-              ? 'Create Account'
-              : 'Welcome Back'}
-          </h2>
+            <h2>
 
-          <p className="login__subtitle">
+              {
+                isRegistering
+                  ? 'Create Account'
+                  : 'Welcome Back'
+              }
 
-            {isRegistering
-              ? 'Create your secure medical imaging account.'
-              : 'Access your secure medical imaging workspace.'}
+            </h2>
 
-          </p>
 
-          {/* ==================================================
+            <p className="login__subtitle">
+
+              {
+                isRegistering
+                  ? 'Create your secure medical imaging account.'
+                  : 'Access your secure medical imaging workspace.'
+              }
+
+            </p>
+
+          </div>
+
+
+          {/* ====================================================
               NAME
-              Only shown during registration
-          ================================================== */}
+          ==================================================== */}
 
-          {isRegistering && (
+          {
+            isRegistering && (
 
-            <label className="login__field">
+              <label className="login__field">
 
-              <span>
-                Full Name
-              </span>
+                <span className="login__label">
+                  Full Name
+                </span>
 
-              <div className="login__input-wrap">
 
-                <User size={16} />
+                <div className="login__input-wrap">
 
-                <input
-                  type="text"
-                  value={name}
-                  onChange={(e) =>
-                    setName(e.target.value)
-                  }
-                  placeholder="Your name"
-                  required
-                />
+                  <User
+                    className="login__input-icon"
+                    size={18}
+                  />
 
-              </div>
 
-            </label>
+                  <input
+                    type="text"
+                    value={name}
+                    onChange={
+                      (event) =>
+                        setName(
+                          event.target.value
+                        )
+                    }
+                    placeholder="Your name"
+                    autoComplete="name"
+                    required
+                  />
 
-          )}
+                </div>
 
-          {/* ==================================================
+              </label>
+
+            )
+          }
+
+
+          {/* ====================================================
               EMAIL
-          ================================================== */}
+          ==================================================== */}
 
           <label className="login__field">
 
-            <span>
+            <span className="login__label">
               Email
             </span>
 
+
             <div className="login__input-wrap">
 
-              <Mail size={16} />
+              <Mail
+                className="login__input-icon"
+                size={18}
+              />
+
 
               <input
                 type="email"
                 value={email}
-                onChange={(e) =>
-                  setEmail(e.target.value)
+                onChange={
+                  (event) =>
+                    setEmail(
+                      event.target.value
+                    )
                 }
                 placeholder="you@example.com"
+                autoComplete="email"
                 required
               />
 
@@ -356,19 +385,25 @@ export default function LoginPage() {
 
           </label>
 
-          {/* ==================================================
+
+          {/* ====================================================
               PASSWORD
-          ================================================== */}
+          ==================================================== */}
 
           <label className="login__field">
 
-            <span>
+            <span className="login__label">
               Password
             </span>
 
-            <div className="login__input-wrap">
 
-              <Lock size={16} />
+            <div className="login__input-wrap login__input-wrap--password">
+
+              <Lock
+                className="login__input-icon"
+                size={18}
+              />
+
 
               <input
                 type={
@@ -377,15 +412,26 @@ export default function LoginPage() {
                     : 'password'
                 }
                 value={password}
-                onChange={(e) =>
-                  setPassword(
-                    e.target.value
-                  )
+                onChange={
+                  (event) =>
+                    setPassword(
+                      event.target.value
+                    )
                 }
-                placeholder="••••••••"
-                minLength={6}
+                placeholder="••••••••••••"
+                autoComplete={
+                  isRegistering
+                    ? 'new-password'
+                    : 'current-password'
+                }
+                minLength={
+                  isRegistering
+                    ? 12
+                    : undefined
+                }
                 required
               />
+
 
               <button
                 type="button"
@@ -402,68 +448,96 @@ export default function LoginPage() {
                 }
               >
 
-                {showPassword ? (
-                  <EyeOff size={15} />
-                ) : (
-                  <Eye size={15} />
-                )}
+                {
+                  showPassword
+                    ? (
+                      <EyeOff size={18} />
+                    )
+                    : (
+                      <Eye size={18} />
+                    )
+                }
 
               </button>
 
             </div>
 
+
+            {
+              isRegistering && (
+
+                <span className="login__password-hint">
+                  Minimum 12 characters.
+                </span>
+
+              )
+            }
+
           </label>
 
-          {/* ==================================================
+
+          {/* ====================================================
               LOGIN OPTIONS
-              Only shown during login
-          ================================================== */}
+          ==================================================== */}
 
-          {!isRegistering && (
+          {
+            !isRegistering && (
 
-            <div className="login__options">
+              <div className="login__options">
 
-              <label>
+                <label className="login__remember">
 
-                <input
-                  type="checkbox"
-                  checked={remember}
-                  onChange={(e) =>
-                    setRemember(
-                      e.target.checked
-                    )
-                  }
-                />
+                  <input
+                    type="checkbox"
+                    checked={remember}
+                    onChange={
+                      (event) =>
+                        setRemember(
+                          event.target.checked
+                        )
+                    }
+                  />
 
-                Remember me
+                  <span>
+                    Remember me
+                  </span>
 
-              </label>
+                </label>
 
-              <a href="#">
-                Forgot Password?
-              </a>
 
-            </div>
+                <button
+                  type="button"
+                  className="login__forgot"
+                >
+                  Forgot Password?
+                </button>
 
-          )}
+              </div>
 
-          {/* ==================================================
+            )
+          }
+
+
+          {/* ====================================================
               ERROR
-          ================================================== */}
+          ==================================================== */}
 
-          {error && (
+          {
+            error && (
 
-            <div className="login__error">
+              <div className="login__error">
 
-              {error}
+                {error}
 
-            </div>
+              </div>
 
-          )}
+            )
+          }
 
-          {/* ==================================================
-              SUBMIT BUTTON
-          ================================================== */}
+
+          {/* ====================================================
+              SUBMIT
+          ==================================================== */}
 
           <button
             type="submit"
@@ -471,42 +545,61 @@ export default function LoginPage() {
             disabled={submitting}
           >
 
-            {submitting
-              ? (
-                isRegistering
-                  ? 'Creating account...'
-                  : 'Signing in...'
-              )
-              : (
-                isRegistering
-                  ? 'Create Account'
-                  : 'Sign In'
-              )}
+            <span>
 
-            {!submitting && (
-              <ArrowRight size={16} />
-            )}
+              {
+                submitting
+                  ? (
+                    isRegistering
+                      ? 'Creating account...'
+                      : 'Signing in...'
+                  )
+                  : (
+                    isRegistering
+                      ? 'Create Account'
+                      : 'Sign In'
+                  )
+              }
+
+            </span>
+
+
+            {
+              !submitting && (
+                <ArrowRight size={18} />
+              )
+            }
 
           </button>
 
-          {/* ==================================================
-              LOGIN / REGISTER SWITCH
-          ================================================== */}
+
+          {/* ====================================================
+              MODE SWITCH
+          ==================================================== */}
 
           <div className="login__mode-switch">
 
-            {isRegistering
-              ? 'Already have an account?'
-              : "Don't have an account?"}
+            <span>
+
+              {
+                isRegistering
+                  ? 'Already have an account?'
+                  : "Don't have an account?"
+              }
+
+            </span>
+
 
             <button
               type="button"
               onClick={switchMode}
             >
 
-              {isRegistering
-                ? 'Sign In'
-                : 'Create Account'}
+              {
+                isRegistering
+                  ? 'Sign In'
+                  : 'Create Account'
+              }
 
             </button>
 
@@ -514,7 +607,7 @@ export default function LoginPage() {
 
         </form>
 
-      </div>
+      </section>
 
     </div>
   );

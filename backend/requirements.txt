@@ -1,6 +1,10 @@
 fastapi
-uvicorn
+uvicorn[standard]
 tensorflow
 numpy
 pillow
 python-multipart
+pydicom
+groq
+python-dotenv
+httpx

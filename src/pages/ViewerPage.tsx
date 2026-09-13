@@ -1,410 +1,1350 @@
 import { useEffect, useState } from 'react';
 import { FileDown } from 'lucide-react';
 import { jsPDF } from 'jspdf';
+import ReactMarkdown from 'react-markdown';
 
 import FileUpload from '../components/FileUpload';
 import Renderer2D from '../components/Renderer2D';
 import ViewerControls from '../components/ViewerControls';
 
 import { useViewerStore } from '../store/viewerStore';
+
 import { checkBackendHealth } from '../services/api';
-import { segmentImage } from '../services/aiService';
+
+import {
+  segmentImage,
+  explainAnalysis,
+} from '../services/aiService';
 
 import './ViewerPage.css';
 
+
+// ============================================================
+// TYPES
+// ============================================================
+
 interface AIResult {
   mask: string;
+
   tumorPixels: number;
+
   tumorPercentage: number;
+
   threshold: number;
+
   message: string;
+
+  analysisId: number;
+
+  modelName: string;
+
+  modelVersion: string;
 }
 
-export default function ViewerPage() {
-  // ==========================================
-  // VIEWER STORE
-  // ==========================================
 
-  const imageFile = useViewerStore((s) => s.imageFile);
-  const originalImageFile = useViewerStore(
-    (s) => s.originalImageFile
-  );
-  const mprEnabled = useViewerStore((s) => s.mprEnabled);
-  const slice = useViewerStore((s) => s.slice);
-  const isLoading = useViewerStore((s) => s.isLoading);
-  const error = useViewerStore((s) => s.error);
+type ExplanationProvider =
+  | 'ollama'
+  | 'groq';
+
+
+export default function ViewerPage() {
+
+  // ============================================================
+  // VIEWER STORE
+  // ============================================================
+
+  const imageFile =
+    useViewerStore(
+      (s) => s.imageFile
+    );
+
+  const originalImageFile =
+    useViewerStore(
+      (s) => s.originalImageFile
+    );
+
+  const mprEnabled =
+    useViewerStore(
+      (s) => s.mprEnabled
+    );
+
+  const slice =
+    useViewerStore(
+      (s) => s.slice
+    );
+
+  const isLoading =
+    useViewerStore(
+      (s) => s.isLoading
+    );
+
+  const error =
+    useViewerStore(
+      (s) => s.error
+    );
+
 
   const showMpr =
-    mprEnabled && imageFile?.volume.is3D;
+    mprEnabled &&
+    imageFile?.volume.is3D;
 
-  // ==========================================
+
+  // ============================================================
   // BACKEND STATUS
-  // ==========================================
+  // ============================================================
 
-  const [backendStatus, setBackendStatus] = useState<
-    'checking' | 'connected' | 'failed'
-  >('checking');
+  const [
+    backendStatus,
+    setBackendStatus,
+  ] = useState<
+    | 'checking'
+    | 'connected'
+    | 'failed'
+  >(
+    'checking'
+  );
 
-  // ==========================================
-  // AI STATE
-  // ==========================================
 
-  const [aiLoading, setAiLoading] =
-    useState(false);
+  // ============================================================
+  // SEGMENTATION STATE
+  // ============================================================
 
-  const [aiResult, setAiResult] =
-    useState<AIResult | null>(null);
+  const [
+    aiLoading,
+    setAiLoading,
+  ] = useState(
+    false
+  );
 
-  const [aiError, setAiError] =
-    useState<string | null>(null);
 
-  // ==========================================
+  const [
+    aiResult,
+    setAiResult,
+  ] = useState<AIResult | null>(
+    null
+  );
+
+
+  const [
+    aiError,
+    setAiError,
+  ] = useState<string | null>(
+    null
+  );
+
+
+  // ============================================================
+  // LLM EXPLANATION STATE
+  // ============================================================
+
+  const [
+    explanationProvider,
+    setExplanationProvider,
+  ] = useState<ExplanationProvider>(
+    'ollama'
+  );
+
+
+  const [
+    explanationLoading,
+    setExplanationLoading,
+  ] = useState(
+    false
+  );
+
+
+  const [
+    explanation,
+    setExplanation,
+  ] = useState<string | null>(
+    null
+  );
+
+
+  const [
+    explanationError,
+    setExplanationError,
+  ] = useState<string | null>(
+    null
+  );
+
+
+  const [
+    explanationDisclaimer,
+    setExplanationDisclaimer,
+  ] = useState<string | null>(
+    null
+  );
+
+
+  const [
+    explanationModel,
+    setExplanationModel,
+  ] = useState<string | null>(
+    null
+  );
+
+
+  // ============================================================
   // CHECK BACKEND
-  // ==========================================
+  // ============================================================
 
   useEffect(() => {
+
     checkBackendHealth()
-      .then((data) => {
-        console.log('Backend connected:', data);
 
-        setBackendStatus('connected');
-      })
-      .catch((error) => {
-        console.error(
-          'Backend connection failed:',
-          error
-        );
+      .then(
+        (data) => {
 
-        setBackendStatus('failed');
-      });
+          console.log(
+            'Backend connected:',
+            data
+          );
+
+          setBackendStatus(
+            'connected'
+          );
+        }
+      )
+
+      .catch(
+        (backendError) => {
+
+          console.error(
+            'Backend connection failed:',
+            backendError
+          );
+
+          setBackendStatus(
+            'failed'
+          );
+        }
+      );
+
   }, []);
 
-  // ==========================================
-  // AI SEGMENTATION
-  // ==========================================
 
-  const handleAIAnalysis = async () => {
-    setAiError(null);
-    setAiResult(null);
+  // ============================================================
+  // RUN U-NET SEGMENTATION
+  // ============================================================
 
-    if (!originalImageFile) {
-      setAiError(
-        'The original image file is not available for AI analysis.'
-      );
-
-      return;
-    }
-
-    try {
-      setAiLoading(true);
-
-      console.log(
-        'Sending image to AI backend:',
-        originalImageFile.name
-      );
-
-      const result =
-        await segmentImage(originalImageFile);
-
-      console.log(
-        'AI segmentation result:',
-        result
-      );
-
-      setAiResult({
-        mask: result.mask,
-        tumorPixels: result.tumor_pixels,
-        tumorPercentage: result.tumor_percentage,
-        threshold: result.threshold,
-        message: result.message,
-      });
-    } catch (error) {
-      console.error(
-        'AI segmentation failed:',
-        error
-      );
+  const handleAIAnalysis =
+    async () => {
 
       setAiError(
-        'AI segmentation failed. Please check that the backend is running.'
-      );
-    } finally {
-      setAiLoading(false);
-    }
-  };
-
-  // ==========================================
-  // DOWNLOAD PDF REPORT
-  // ==========================================
-
-const downloadAnalysisReport = () => {
-    if (!aiResult) {
-      alert(
-        'Please run AI segmentation before downloading the report.'
+        null
       );
 
-      return;
-    }
+      setAiResult(
+        null
+      );
 
-    const doc = new jsPDF();
 
-    const pageWidth = doc.internal.pageSize.getWidth();
-    const pageHeight = doc.internal.pageSize.getHeight();
-    const bottomMargin = 18;
+      // Remove previous explanation when
+      // a new segmentation is started.
 
-    let y = 0;
+      setExplanation(
+        null
+      );
 
-    // ========================================
-    // PAGE-BREAK SAFETY NET
-    // Layout below is tuned to fit one page for a
-    // normal-length report; this only kicks in if
-    // the AI message is unusually long.
-    // ========================================
+      setExplanationError(
+        null
+      );
 
-    const ensureSpace = (neededHeight: number) => {
-      if (y + neededHeight > pageHeight - bottomMargin) {
-        doc.addPage();
-        y = 22;
+      setExplanationDisclaimer(
+        null
+      );
+
+      setExplanationModel(
+        null
+      );
+
+
+      if (
+        !originalImageFile
+      ) {
+
+        setAiError(
+          'The original image file is not available for AI analysis.'
+        );
+
+        return;
+      }
+
+
+      try {
+
+        setAiLoading(
+          true
+        );
+
+
+        console.log(
+          'Sending image to AI backend:',
+          originalImageFile.name
+        );
+
+
+        const result =
+          await segmentImage(
+            originalImageFile
+          );
+
+
+        console.log(
+          'AI segmentation result:',
+          result
+        );
+
+
+        setAiResult({
+          mask:
+            result.mask,
+
+          tumorPixels:
+            result.tumor_pixels,
+
+          tumorPercentage:
+            result.tumor_percentage,
+
+          threshold:
+            result.threshold,
+
+          message:
+            result.message,
+
+          analysisId:
+            result.analysis_id,
+
+          modelName:
+            result.model_name,
+
+          modelVersion:
+            result.model_version,
+        });
+
+      } catch (analysisError) {
+
+        console.error(
+          'AI segmentation failed:',
+          analysisError
+        );
+
+
+        setAiError(
+          'AI segmentation failed. Please make sure you are logged in and the backend is running.'
+        );
+
+      } finally {
+
+        setAiLoading(
+          false
+        );
+
       }
     };
 
-    // ========================================
-    // HEADER
-    // ========================================
 
-    y = 22;
+  // ============================================================
+  // GENERATE OLLAMA / GROQ EXPLANATION
+  // ============================================================
 
-    doc.setFontSize(17);
-    doc.setFont('helvetica', 'bold');
-    doc.text('Medical Image Analysis Report', pageWidth / 2, y, {
-      align: 'center',
-    });
+  const handleGenerateExplanation =
+    async () => {
 
-    y += 7;
+      if (
+        !aiResult
+      ) {
 
-    doc.setFontSize(9);
-    doc.setFont('helvetica', 'normal');
-    doc.text(
-      `Generated: ${new Date().toLocaleString()}`,
-      pageWidth / 2,
-      y,
-      { align: 'center' }
-    );
+        setExplanationError(
+          'Run segmentation before generating an AI explanation.'
+        );
 
-    y += 6;
-    doc.line(20, y, pageWidth - 20, y);
+        return;
+      }
 
-    // ========================================
-    // IMAGE INFORMATION
-    // ========================================
 
-    y += 10;
-    ensureSpace(22);
+      try {
 
-    doc.setFontSize(12.5);
-    doc.setFont('helvetica', 'bold');
-    doc.text('Image Information', 20, y);
+        setExplanationLoading(
+          true
+        );
 
-    y += 8;
+        setExplanationError(
+          null
+        );
 
-    doc.setFontSize(10);
-    doc.setFont('helvetica', 'normal');
+        setExplanation(
+          null
+        );
 
-    doc.text(
-      `File: ${
-        imageFile?.volume.fileName ??
-        originalImageFile?.name ??
-        'Unknown'
-      }`,
-      20,
-      y
-    );
+        setExplanationDisclaimer(
+          null
+        );
 
-    y += 6.5;
+        setExplanationModel(
+          null
+        );
 
-    doc.text(
-      `Dimensions: ${
-        imageFile?.volume.dims?.join(' × ') ?? 'Unknown'
-      }`,
-      20,
-      y
-    );
 
-    // ========================================
-    // AI ANALYSIS
-    // ========================================
+        console.log(
+          'Generating AI explanation:',
+          {
+            analysisId:
+              aiResult.analysisId,
 
-    y += 13;
-    ensureSpace(38);
+            provider:
+              explanationProvider,
+          }
+        );
 
-    doc.setFontSize(12.5);
-    doc.setFont('helvetica', 'bold');
-    doc.text('AI Analysis', 20, y);
 
-    y += 8;
+        const result =
+          await explainAnalysis(
+            aiResult.analysisId,
+            explanationProvider,
+            'technical'
+          );
 
-    doc.setFontSize(10);
-    doc.setFont('helvetica', 'normal');
 
-    doc.text('Model: U-Net Brain Tumor Segmentation', 20, y);
+        console.log(
+          'AI explanation result:',
+          result
+        );
 
-    y += 6.5;
 
-    doc.text(`Segmentation Threshold: ${aiResult.threshold}`, 20, y);
+        setExplanation(
+          result.explanation
+        );
 
-    y += 6.5;
 
-    doc.text(
-      `Tumor Pixels: ${aiResult.tumorPixels.toLocaleString()}`,
-      20,
-      y
-    );
+        setExplanationDisclaimer(
+          result.disclaimer
+        );
 
-    y += 6.5;
 
-    doc.text(
-      `Tumor Area: ${aiResult.tumorPercentage.toFixed(2)}%`,
-      20,
-      y
-    );
+        setExplanationModel(
+          result.model
+        );
 
-    // ========================================
-    // RESULT
-    // ========================================
+      } catch (explanationRequestError) {
 
-    y += 13;
-    ensureSpace(18);
+        console.error(
+          'AI explanation failed:',
+          explanationRequestError
+        );
 
-    doc.setFontSize(12.5);
-    doc.setFont('helvetica', 'bold');
-    doc.text('Segmentation Result', 20, y);
 
-    y += 8;
+        setExplanationError(
+          explanationProvider ===
+            'ollama'
+            ? 'Ollama explanation failed. Make sure Ollama is running and the llama3.2 model is available.'
+            : 'Groq explanation failed. Check the Groq API configuration and internet connection.'
+        );
 
-    doc.setFontSize(10.5);
-    doc.setFont('helvetica', 'normal');
+      } finally {
 
-    const tumorDetected = aiResult.tumorPixels > 0;
+        setExplanationLoading(
+          false
+        );
 
-    doc.text(
-      `Tumor Region Detected: ${tumorDetected ? 'Yes' : 'No'}`,
-      20,
-      y
-    );
+      }
+    };
 
-    // ========================================
-    // SEGMENTATION MASK
-    // Smaller thumbnail (65x65mm instead of
-    // 100x100mm) so the whole report fits one page.
-    // ========================================
 
-    y += 12;
-    const maskSize = 65;
-    ensureSpace(8 + maskSize + 6);
+  // ============================================================
+  // PDF TEXT NORMALIZER
+  // ============================================================
 
-    doc.setFontSize(12.5);
-    doc.setFont('helvetica', 'bold');
-    doc.text('AI Segmentation Mask', 20, y);
+  const normalizePdfText =
+    (
+      text: string
+    ): string => {
 
-    try {
-      doc.addImage(aiResult.mask, 'PNG', 20, y + 6, maskSize, maskSize);
-    } catch (error) {
-      console.error('Failed to add segmentation mask to PDF:', error);
-    }
+      return text
 
-    y += 6 + maskSize;
+        // Markdown headings
+        .replace(
+          /^#{1,6}\s*/gm,
+          ''
+        )
 
-    // ========================================
-    // ANALYSIS MESSAGE
-    // ========================================
+        // Markdown bold / italic
+        .replace(
+          /\*\*/g,
+          ''
+        )
 
-    y += 10;
+        .replace(
+          /__/g,
+          ''
+        )
 
-    const message =
-      aiResult.message || 'Analysis completed successfully.';
+        .replace(
+          /\*/g,
+          ''
+        )
 
-    doc.setFontSize(9);
-    doc.setFont('helvetica', 'normal');
-    const messageLines = doc.splitTextToSize(message, pageWidth - 40);
+        // Inline code
+        .replace(
+          /`/g,
+          ''
+        )
 
-    ensureSpace(8 + messageLines.length * 4.5);
+        // Unicode comparison operators
+        .replace(
+          /≥/g,
+          '>='
+        )
 
-    doc.setFontSize(11);
-    doc.setFont('helvetica', 'bold');
-    doc.text('Analysis Message', 20, y);
+        .replace(
+          /≤/g,
+          '<='
+        )
 
-    y += 6.5;
+        // Dashes
+        .replace(
+          /–/g,
+          '-'
+        )
 
-    doc.setFontSize(9);
-    doc.setFont('helvetica', 'normal');
-    doc.text(messageLines, 20, y);
+        .replace(
+          /—/g,
+          '-'
+        )
 
-    // ========================================
-    // DISCLAIMER
-    // ========================================
+        // Bullets
+        .replace(
+          /•/g,
+          '-'
+        )
 
-    y += messageLines.length * 4.5 + 10;
+        // Arrows
+        .replace(
+          /→/g,
+          '->'
+        )
 
-    const disclaimer =
-      'This report is generated by an AI-assisted image segmentation system for demonstration and research purposes. It is not a medical diagnosis and should not be used as a substitute for assessment by a qualified healthcare professional.';
+        .replace(
+          /←/g,
+          '<-'
+        )
 
-    doc.setFontSize(8);
-    doc.setFont('helvetica', 'normal');
-    const disclaimerLines = doc.splitTextToSize(
-      disclaimer,
-      pageWidth - 40
-    );
+        // Smart quotes
+        .replace(
+          /[“”]/g,
+          '"'
+        )
 
-    ensureSpace(6 + disclaimerLines.length * 4);
+        .replace(
+          /[‘’]/g,
+          "'"
+        )
 
-    doc.setFontSize(10);
-    doc.setFont('helvetica', 'bold');
-    doc.text('Important Notice', 20, y);
+        // Non-breaking spaces
+        .replace(
+          /\u00A0/g,
+          ' '
+        )
 
-    y += 6;
+        // Repeated spaces
+        .replace(
+          /[ \t]+/g,
+          ' '
+        )
 
-    doc.setFontSize(8);
-    doc.setFont('helvetica', 'normal');
-    doc.text(disclaimerLines, 20, y);
+        // Too many blank lines
+        .replace(
+          /\n{3,}/g,
+          '\n\n'
+        )
 
-    // ========================================
-    // FOOTER — stamped on every page
-    // ========================================
+        .trim();
+    };
 
-    const pageCount = doc.internal.pages.length - 1;
 
-    for (let i = 1; i <= pageCount; i++) {
-      doc.setPage(i);
-      doc.setFontSize(7.5);
-      doc.setFont('helvetica', 'normal');
-      doc.text(
-        'Medical Image Viewer - AI Analysis',
-        pageWidth / 2,
-        pageHeight - 10,
-        { align: 'center' }
+  // ============================================================
+  // DOWNLOAD PDF REPORT
+  // ============================================================
+
+  const downloadAnalysisReport =
+    () => {
+
+      if (
+        !aiResult
+      ) {
+
+        alert(
+          'Please run AI segmentation before downloading the report.'
+        );
+
+        return;
+      }
+
+
+      const doc =
+        new jsPDF();
+
+
+      const pageWidth =
+        doc.internal.pageSize.getWidth();
+
+      const pageHeight =
+        doc.internal.pageSize.getHeight();
+
+
+      const leftMargin =
+        20;
+
+      const rightMargin =
+        20;
+
+      const bottomMargin =
+        18;
+
+
+      const textWidth =
+        pageWidth -
+        leftMargin -
+        rightMargin;
+
+
+      let y =
+        22;
+
+
+      // ==========================================================
+      // PAGE BREAK HELPER
+      // ==========================================================
+
+      const ensureSpace =
+        (
+          neededHeight:
+            number
+        ) => {
+
+          if (
+            y +
+              neededHeight >
+            pageHeight -
+              bottomMargin
+          ) {
+
+            doc.addPage();
+
+            y =
+              22;
+          }
+        };
+
+
+      // ==========================================================
+      // WRAPPED TEXT HELPER
+      // ==========================================================
+
+      const addWrappedText =
+        (
+          text:
+            string,
+
+          fontSize:
+            number = 9,
+
+          lineHeight:
+            number = 4.5
+        ) => {
+
+          doc.setFontSize(
+            fontSize
+          );
+
+          doc.setFont(
+            'helvetica',
+            'normal'
+          );
+
+
+          const normalizedText =
+            normalizePdfText(
+              text
+            );
+
+
+          const paragraphs =
+            normalizedText.split(
+              '\n'
+            );
+
+
+          for (
+            const paragraph of
+              paragraphs
+          ) {
+
+            if (
+              !paragraph.trim()
+            ) {
+
+              y +=
+                lineHeight;
+
+              continue;
+            }
+
+
+            const lines =
+              doc.splitTextToSize(
+                paragraph,
+                textWidth
+              ) as string[];
+
+
+            for (
+              const line of lines
+            ) {
+
+              ensureSpace(
+                lineHeight
+              );
+
+
+              doc.text(
+                line,
+                leftMargin,
+                y
+              );
+
+
+              y +=
+                lineHeight;
+            }
+          }
+        };
+
+
+      // ==========================================================
+      // HEADER
+      // ==========================================================
+
+      doc.setFontSize(
+        17
       );
-    }
 
-    // ========================================
-    // DOWNLOAD
-    // ========================================
+      doc.setFont(
+        'helvetica',
+        'bold'
+      );
 
-    const timestamp = new Date()
-      .toISOString()
-      .replace(/[:.]/g, '-');
 
-    doc.save(`medical-analysis-report-${timestamp}.pdf`);
-  };
+      doc.text(
+        'Medical Image Analysis Report',
+        pageWidth / 2,
+        y,
+        {
+          align:
+            'center',
+        }
+      );
 
-  // ==========================================
+
+      y +=
+        7;
+
+
+      doc.setFontSize(
+        9
+      );
+
+      doc.setFont(
+        'helvetica',
+        'normal'
+      );
+
+
+      doc.text(
+        `Generated: ${new Date().toLocaleString()}`,
+        pageWidth / 2,
+        y,
+        {
+          align:
+            'center',
+        }
+      );
+
+
+      y +=
+        6;
+
+
+      doc.line(
+        leftMargin,
+        y,
+        pageWidth -
+          rightMargin,
+        y
+      );
+
+
+      // ==========================================================
+      // IMAGE INFORMATION
+      // ==========================================================
+
+      y +=
+        10;
+
+
+      ensureSpace(
+        25
+      );
+
+
+      doc.setFontSize(
+        12.5
+      );
+
+      doc.setFont(
+        'helvetica',
+        'bold'
+      );
+
+
+      doc.text(
+        'Image Information',
+        leftMargin,
+        y
+      );
+
+
+      y +=
+        8;
+
+
+      doc.setFontSize(
+        10
+      );
+
+      doc.setFont(
+        'helvetica',
+        'normal'
+      );
+
+
+      doc.text(
+        `File: ${
+          imageFile?.volume.fileName ??
+          originalImageFile?.name ??
+          'Unknown'
+        }`,
+        leftMargin,
+        y
+      );
+
+
+      y +=
+        6.5;
+
+
+      doc.text(
+        `Dimensions: ${
+          imageFile?.volume.dims?.join(
+            ' x '
+          ) ??
+          'Unknown'
+        }`,
+        leftMargin,
+        y
+      );
+
+
+      // ==========================================================
+      // AI SEGMENTATION ANALYSIS
+      // ==========================================================
+
+      y +=
+        13;
+
+
+      ensureSpace(
+        50
+      );
+
+
+      doc.setFontSize(
+        12.5
+      );
+
+      doc.setFont(
+        'helvetica',
+        'bold'
+      );
+
+
+      doc.text(
+        'AI Segmentation Analysis',
+        leftMargin,
+        y
+      );
+
+
+      y +=
+        8;
+
+
+      doc.setFontSize(
+        10
+      );
+
+      doc.setFont(
+        'helvetica',
+        'normal'
+      );
+
+
+      doc.text(
+        `Model: ${aiResult.modelName}`,
+        leftMargin,
+        y
+      );
+
+
+      y +=
+        6.5;
+
+
+      doc.text(
+        `Model Version: ${aiResult.modelVersion}`,
+        leftMargin,
+        y
+      );
+
+
+      y +=
+        6.5;
+
+
+      doc.text(
+        `Analysis ID: ${aiResult.analysisId}`,
+        leftMargin,
+        y
+      );
+
+
+      y +=
+        6.5;
+
+
+      doc.text(
+        `Segmentation Threshold: ${aiResult.threshold}`,
+        leftMargin,
+        y
+      );
+
+
+      y +=
+        6.5;
+
+
+      doc.text(
+        `Model-positive Pixels: ${aiResult.tumorPixels.toLocaleString()}`,
+        leftMargin,
+        y
+      );
+
+
+      y +=
+        6.5;
+
+
+      doc.text(
+        `Segmented Image Area: ${aiResult.tumorPercentage.toFixed(
+          2
+        )}%`,
+        leftMargin,
+        y
+      );
+
+
+      // ==========================================================
+      // SEGMENTATION RESULT
+      // ==========================================================
+
+      y +=
+        13;
+
+
+      ensureSpace(
+        20
+      );
+
+
+      doc.setFontSize(
+        12.5
+      );
+
+      doc.setFont(
+        'helvetica',
+        'bold'
+      );
+
+
+      doc.text(
+        'Segmentation Result',
+        leftMargin,
+        y
+      );
+
+
+      y +=
+        8;
+
+
+      doc.setFontSize(
+        10
+      );
+
+      doc.setFont(
+        'helvetica',
+        'normal'
+      );
+
+
+      const regionDetected =
+        aiResult.tumorPixels >
+        0;
+
+
+      doc.text(
+        `Segmented Region Present: ${
+          regionDetected
+            ? 'Yes'
+            : 'No'
+        }`,
+        leftMargin,
+        y
+      );
+
+
+      // ==========================================================
+      // SEGMENTATION MASK
+      // ==========================================================
+
+      y +=
+        12;
+
+
+      const maskSize =
+        65;
+
+
+      ensureSpace(
+        maskSize +
+          15
+      );
+
+
+      doc.setFontSize(
+        12.5
+      );
+
+      doc.setFont(
+        'helvetica',
+        'bold'
+      );
+
+
+      doc.text(
+        'AI Segmentation Mask',
+        leftMargin,
+        y
+      );
+
+
+      try {
+
+        doc.addImage(
+          aiResult.mask,
+          'PNG',
+          leftMargin,
+          y + 6,
+          maskSize,
+          maskSize
+        );
+
+      } catch (maskError) {
+
+        console.error(
+          'Failed to add segmentation mask to PDF:',
+          maskError
+        );
+
+      }
+
+
+      y +=
+        maskSize +
+        16;
+
+
+      // ==========================================================
+      // ANALYSIS MESSAGE
+      // ==========================================================
+
+      ensureSpace(
+        20
+      );
+
+
+      doc.setFontSize(
+        11
+      );
+
+      doc.setFont(
+        'helvetica',
+        'bold'
+      );
+
+
+      doc.text(
+        'Analysis Message',
+        leftMargin,
+        y
+      );
+
+
+      y +=
+        7;
+
+
+      const analysisMessage =
+        aiResult.message
+
+          ?.replace(
+            /tumor segmentation completed\.?/i,
+            'Segmentation analysis completed successfully.'
+          )
+
+        ||
+          'Segmentation analysis completed successfully.';
+
+
+      addWrappedText(
+        analysisMessage,
+        9,
+        4.5
+      );
+
+
+      // ==========================================================
+      // LLM EXPLANATION
+      // ==========================================================
+
+      if (
+        explanation
+      ) {
+
+        y +=
+          8;
+
+
+        ensureSpace(
+          25
+        );
+
+
+        doc.setFontSize(
+          12
+        );
+
+        doc.setFont(
+          'helvetica',
+          'bold'
+        );
+
+
+        doc.text(
+          'AI Explanation',
+          leftMargin,
+          y
+        );
+
+
+        y +=
+          7;
+
+
+        doc.setFontSize(
+          9
+        );
+
+        doc.setFont(
+          'helvetica',
+          'normal'
+        );
+
+
+        doc.text(
+          `Provider: ${
+            explanationProvider ===
+            'ollama'
+              ? 'Ollama (Local)'
+              : 'Groq (Cloud)'
+          }`,
+          leftMargin,
+          y
+        );
+
+
+        y +=
+          5.5;
+
+
+        if (
+          explanationModel
+        ) {
+
+          doc.text(
+            `Language Model: ${normalizePdfText(
+              explanationModel
+            )}`,
+            leftMargin,
+            y
+          );
+
+
+          y +=
+            7;
+        }
+
+
+        addWrappedText(
+          explanation,
+          8.5,
+          4.3
+        );
+
+      }
+
+
+      // ==========================================================
+      // IMPORTANT NOTICE
+      // ==========================================================
+
+      y +=
+        10;
+
+
+      ensureSpace(
+        25
+      );
+
+
+      doc.setFontSize(
+        10
+      );
+
+      doc.setFont(
+        'helvetica',
+        'bold'
+      );
+
+
+      doc.text(
+        'Important Notice',
+        leftMargin,
+        y
+      );
+
+
+      y +=
+        6;
+
+
+      const defaultDisclaimer =
+        'This report is generated by an AI-assisted image segmentation system for research and demonstration purposes only. The segmentation output and language-model explanation are not medical diagnoses and should not be used as substitutes for review by a qualified healthcare professional.';
+
+
+      addWrappedText(
+        explanationDisclaimer ??
+          defaultDisclaimer,
+        8,
+        4
+      );
+
+
+      // ==========================================================
+      // FOOTERS
+      // ==========================================================
+
+      const pageCount =
+        doc.internal.pages.length -
+        1;
+
+
+      for (
+        let pageNumber = 1;
+        pageNumber <=
+        pageCount;
+        pageNumber++
+      ) {
+
+        doc.setPage(
+          pageNumber
+        );
+
+
+        doc.setFontSize(
+          7.5
+        );
+
+        doc.setFont(
+          'helvetica',
+          'normal'
+        );
+
+
+        doc.text(
+          `MedVision AI - Research Analysis - Page ${pageNumber} of ${pageCount}`,
+          pageWidth / 2,
+          pageHeight - 10,
+          {
+            align:
+              'center',
+          }
+        );
+
+      }
+
+
+      // ==========================================================
+      // DOWNLOAD
+      // ==========================================================
+
+      const timestamp =
+        new Date()
+          .toISOString()
+          .replace(
+            /[:.]/g,
+            '-'
+          );
+
+
+      doc.save(
+        `medical-analysis-report-${timestamp}.pdf`
+      );
+    };
+
+
+  // ============================================================
   // UI
-  // ==========================================
+  // ============================================================
 
   return (
+
     <div className="viewer">
 
-      {/* ======================================
+      {/* ========================================================
           FILE UPLOAD
-      ====================================== */}
+      ======================================================== */}
 
       <FileUpload
         label="Load files"
@@ -412,255 +1352,716 @@ const downloadAnalysisReport = () => {
         slot="image"
       />
 
-      {/* ======================================
+
+      {/* ========================================================
           BACKEND STATUS
-      ====================================== */}
+      ======================================================== */}
 
       <div className="viewer__status">
 
-        {backendStatus === 'connected' && (
-          <span className="viewer__backend-status viewer__backend-status--connected">
-            Backend: Connected ✓
-          </span>
-        )}
+        {
+          backendStatus ===
+            'connected' && (
 
-        {backendStatus === 'failed' && (
-          <span className="viewer__backend-status viewer__backend-status--failed">
-            Backend: Disconnected ✕
-          </span>
-        )}
+            <span
+              className="
+                viewer__backend-status
+                viewer__backend-status--connected
+              "
+            >
+              Backend: Connected ✓
+            </span>
 
-        {backendStatus === 'checking' && (
-          <span className="viewer__backend-status">
-            Backend: Checking...
-          </span>
-        )}
+          )
+        }
+
+
+        {
+          backendStatus ===
+            'failed' && (
+
+            <span
+              className="
+                viewer__backend-status
+                viewer__backend-status--failed
+              "
+            >
+              Backend: Disconnected ✕
+            </span>
+
+          )
+        }
+
+
+        {
+          backendStatus ===
+            'checking' && (
+
+            <span
+              className="viewer__backend-status"
+            >
+              Backend: Checking...
+            </span>
+
+          )
+        }
 
       </div>
 
-      {/* ======================================
+
+      {/* ========================================================
           GENERAL ERROR
-      ====================================== */}
+      ======================================================== */}
 
-      {error && (
-        <div className="viewer__error">
-          {error}
-        </div>
-      )}
+      {
+        error && (
 
-      {/* ======================================
-          LOADING
-      ====================================== */}
+          <div className="viewer__error">
 
-      {isLoading && (
-        <div className="viewer__loading">
-          Loading file…
-        </div>
-      )}
+            {error}
 
-      {/* ======================================
+          </div>
+
+        )
+      }
+
+
+      {/* ========================================================
+          FILE LOADING
+      ======================================================== */}
+
+      {
+        isLoading && (
+
+          <div className="viewer__loading">
+
+            Loading file…
+
+          </div>
+
+        )
+      }
+
+
+      {/* ========================================================
           MAIN VIEWER
-      ====================================== */}
+      ======================================================== */}
 
       <div className="viewer__main">
 
-        {/* ====================================
+        {/* ======================================================
             VIEWPORT
-        ==================================== */}
+        ====================================================== */}
 
         <div className="viewer__viewport">
 
-          {showMpr ? (
+          {
+            showMpr
+              ? (
 
-            <div className="viewer__mpr-grid">
+                <div className="viewer__mpr-grid">
 
-              <Renderer2D
-                plane="axial"
-                sliceIndex={slice.axial}
-                label="Axial"
-              />
+                  <Renderer2D
+                    plane="axial"
+                    sliceIndex={
+                      slice.axial
+                    }
+                    label="Axial"
+                  />
 
-              <Renderer2D
-                plane="sagittal"
-                sliceIndex={slice.sagittal}
-                label="Sagittal"
-              />
 
-              <Renderer2D
-                plane="coronal"
-                sliceIndex={slice.coronal}
-                label="Coronal"
-              />
+                  <Renderer2D
+                    plane="sagittal"
+                    sliceIndex={
+                      slice.sagittal
+                    }
+                    label="Sagittal"
+                  />
 
-              <div className="viewer__mpr-info">
 
-                <span className="viewer__mpr-info-title">
-                  {imageFile?.volume.fileName}
-                </span>
+                  <Renderer2D
+                    plane="coronal"
+                    sliceIndex={
+                      slice.coronal
+                    }
+                    label="Coronal"
+                  />
 
-                <span>
-                  {imageFile?.volume.dims.join(
-                    ' × '
-                  )}
-                </span>
 
-              </div>
+                  <div className="viewer__mpr-info">
 
-            </div>
+                    <span className="viewer__mpr-info-title">
 
-          ) : (
+                      {
+                        imageFile
+                          ?.volume
+                          .fileName
+                      }
 
-            <Renderer2D
-              plane="axial"
-              sliceIndex={slice.axial}
-              label={
-                imageFile?.volume.is3D
-                  ? 'Axial'
-                  : imageFile?.volume.fileName ??
-                    'Viewport'
-              }
-            />
+                    </span>
 
-          )}
+
+                    <span>
+
+                      {
+                        imageFile
+                          ?.volume
+                          .dims
+                          .join(
+                            ' × '
+                          )
+                      }
+
+                    </span>
+
+                  </div>
+
+                </div>
+
+              )
+              : (
+
+                <Renderer2D
+                  plane="axial"
+                  sliceIndex={
+                    slice.axial
+                  }
+                  label={
+                    imageFile
+                      ?.volume
+                      .is3D
+
+                      ? 'Axial'
+
+                      : imageFile
+                          ?.volume
+                          .fileName ??
+                        'Viewport'
+                  }
+                />
+
+              )
+          }
 
         </div>
 
-        {/* ====================================
+
+        {/* ======================================================
             SIDEBAR
-        ==================================== */}
+        ====================================================== */}
 
         <aside className="viewer__sidebar">
 
-          {/* ==================================
+          {/* ====================================================
               VIEWER CONTROLS
-          ================================== */}
+          ==================================================== */}
 
           <ViewerControls />
 
-          {/* ==================================
-              AI PANEL
-          ================================== */}
+
+          {/* ====================================================
+              AI ANALYSIS PANEL
+          ==================================================== */}
 
           <div className="viewer__ai-panel">
 
             <div className="viewer__ai-title">
+
               AI ANALYSIS
+
             </div>
 
-            {/* ================================
-                AI BUTTON
-            ================================= */}
+
+            {/* ==================================================
+                RUN SEGMENTATION
+            ================================================== */}
 
             <button
               type="button"
               className="viewer__ai-button"
-              onClick={handleAIAnalysis}
+              onClick={
+                handleAIAnalysis
+              }
               disabled={
                 aiLoading ||
-                backendStatus !== 'connected' ||
+                explanationLoading ||
+                backendStatus !==
+                  'connected' ||
                 !originalImageFile
               }
             >
-              {aiLoading
-                ? 'Analyzing...'
-                : 'Run Tumor Segmentation'}
+
+              {
+                aiLoading
+                  ? 'Analyzing...'
+                  : 'Run Segmentation'
+              }
+
             </button>
 
-            {/* ================================
+
+            {/* ==================================================
                 NO IMAGE MESSAGE
-            ================================= */}
+            ================================================== */}
 
-            {!originalImageFile && (
-              <p className="viewer__ai-hint">
-                Load an MRI image first.
-              </p>
-            )}
+            {
+              !originalImageFile && (
 
-            {/* ================================
-                AI ERROR
-            ================================= */}
+                <p className="viewer__ai-hint">
 
-            {aiError && (
-              <div className="viewer__ai-error">
-                {aiError}
-              </div>
-            )}
+                  Load an MRI image first.
 
-            {/* ================================
-                AI RESULT
-            ================================= */}
+                </p>
 
-            {aiResult && (
+              )
+            }
 
-              <div className="viewer__ai-result">
 
-                <div className="viewer__ai-result-title">
-                  Segmentation Complete
-                </div>
+            {/* ==================================================
+                SEGMENTATION ERROR
+            ================================================== */}
 
-                {/* Tumor pixels */}
+            {
+              aiError && (
 
-                <div className="viewer__ai-stat">
+                <div className="viewer__ai-error">
 
-                  Tumor pixels:
-
-                  <strong>
-                    {aiResult.tumorPixels.toLocaleString()}
-                  </strong>
+                  {aiError}
 
                 </div>
 
-                {/* Tumor percentage */}
+              )
+            }
 
-                <div className="viewer__ai-stat">
 
-                  Detected region:
+            {/* ==================================================
+                SEGMENTATION RESULT
+            ================================================== */}
 
-                  <strong>
-                    {aiResult.tumorPercentage.toFixed(2)}%
-                  </strong>
+            {
+              aiResult && (
+
+                <div className="viewer__ai-result">
+
+                  <div className="viewer__ai-result-title">
+
+                    Segmentation Complete
+
+                  </div>
+
+
+                  {/* ============================================
+                      MODEL-POSITIVE PIXELS
+                  ============================================ */}
+
+                  <div className="viewer__ai-stat">
+
+                    Model-positive pixels:
+
+                    <strong>
+
+                      {
+                        aiResult
+                          .tumorPixels
+                          .toLocaleString()
+                      }
+
+                    </strong>
+
+                  </div>
+
+
+                  {/* ============================================
+                      DETECTED REGION
+                  ============================================ */}
+
+                  <div className="viewer__ai-stat">
+
+                    Segmented area:
+
+                    <strong>
+
+                      {
+                        aiResult
+                          .tumorPercentage
+                          .toFixed(
+                            2
+                          )
+                      }
+                      %
+
+                    </strong>
+
+                  </div>
+
+
+                  {/* ============================================
+                      THRESHOLD
+                  ============================================ */}
+
+                  <div className="viewer__ai-stat">
+
+                    Threshold:
+
+                    <strong>
+
+                      {
+                        aiResult
+                          .threshold
+                      }
+
+                    </strong>
+
+                  </div>
+
+
+                  {/* ============================================
+                      ANALYSIS ID
+                  ============================================ */}
+
+                  <div className="viewer__ai-stat">
+
+                    Analysis ID:
+
+                    <strong>
+
+                      {
+                        aiResult
+                          .analysisId
+                      }
+
+                    </strong>
+
+                  </div>
+
+
+                  {/* ============================================
+                      SEGMENTATION MASK
+                  ============================================ */}
+
+                  <img
+                    src={
+                      aiResult.mask
+                    }
+                    alt="AI segmentation mask"
+                    className="viewer__ai-mask"
+                  />
+
+
+                  {/* ============================================
+                      AI EXPLANATION SECTION
+                  ============================================ */}
+
+                  <div
+                    style={{
+                      marginTop:
+                        '16px',
+
+                      paddingTop:
+                        '14px',
+
+                      borderTop:
+                        '1px solid rgba(255,255,255,0.10)',
+                    }}
+                  >
+
+                    <div className="viewer__ai-result-title">
+
+                      AI Explanation
+
+                    </div>
+
+
+                    {/* ==========================================
+                        PROVIDER
+                    ========================================== */}
+
+                    <label
+                      htmlFor="explanation-provider"
+                      className="viewer__ai-hint"
+                      style={{
+                        display:
+                          'block',
+
+                        marginBottom:
+                          '6px',
+                      }}
+                    >
+
+                      Explanation provider
+
+                    </label>
+
+
+                    <select
+                      id="explanation-provider"
+                      value={
+                        explanationProvider
+                      }
+                      onChange={
+                        (
+                          event
+                        ) => {
+
+                          setExplanationProvider(
+                            event.target
+                              .value as
+                              ExplanationProvider
+                          );
+
+
+                          setExplanation(
+                            null
+                          );
+
+                          setExplanationError(
+                            null
+                          );
+
+                          setExplanationDisclaimer(
+                            null
+                          );
+
+                          setExplanationModel(
+                            null
+                          );
+                        }
+                      }
+                      disabled={
+                        explanationLoading
+                      }
+                      style={{
+                        width:
+                          '100%',
+
+                        marginBottom:
+                          '10px',
+
+                        padding:
+                          '9px',
+
+                        borderRadius:
+                          '4px',
+                      }}
+                    >
+
+                      <option value="ollama">
+
+                        Ollama - Local
+
+                      </option>
+
+
+                      <option value="groq">
+
+                        Groq - Cloud
+
+                      </option>
+
+                    </select>
+
+
+                    {/* ==========================================
+                        CLOUD NOTICE
+                    ========================================== */}
+
+                    {
+                      explanationProvider ===
+                        'groq' && (
+
+                        <p className="viewer__ai-hint">
+
+                          Groq is a cloud provider.
+                          Only approved structured
+                          segmentation results are
+                          sent by the backend.
+
+                        </p>
+
+                      )
+                    }
+
+
+                    {/* ==========================================
+                        GENERATE BUTTON
+                    ========================================== */}
+
+                    <button
+                      type="button"
+                      className="viewer__ai-button"
+                      onClick={
+                        handleGenerateExplanation
+                      }
+                      disabled={
+                        explanationLoading
+                      }
+                    >
+
+                      {
+                        explanationLoading
+
+                          ? 'Generating Explanation...'
+
+                          : explanationProvider ===
+                            'ollama'
+
+                            ? 'Explain with Ollama'
+
+                            : 'Explain with Groq'
+                      }
+
+                    </button>
+
+
+                    {/* ==========================================
+                        EXPLANATION ERROR
+                    ========================================== */}
+
+                    {
+                      explanationError && (
+
+                        <div className="viewer__ai-error">
+
+                          {
+                            explanationError
+                          }
+
+                        </div>
+
+                      )
+                    }
+
+
+                    {/* ==========================================
+                        GENERATED EXPLANATION
+                    ========================================== */}
+
+                    {
+                      explanation && (
+
+                        <div
+                          style={{
+                            marginTop:
+                              '12px',
+
+                            padding:
+                              '12px',
+
+                            border:
+                              '1px solid rgba(255,255,255,0.10)',
+
+                            borderRadius:
+                              '4px',
+
+                            lineHeight:
+                              1.55,
+
+                            overflowWrap:
+                              'anywhere',
+                          }}
+                        >
+
+                          <div
+                            style={{
+                              marginBottom:
+                                '8px',
+
+                              fontSize:
+                                '12px',
+
+                              opacity:
+                                0.8,
+                            }}
+                          >
+
+                            {
+                              explanationProvider ===
+                                'ollama'
+                                ? 'Ollama'
+                                : 'Groq'
+                            }
+
+                            {
+                              explanationModel
+                                ? ` • ${explanationModel}`
+                                : ''
+                            }
+
+                          </div>
+
+
+                          <div className="viewer__explanation-text">
+
+                            <ReactMarkdown>
+
+                              {
+                                explanation
+                              }
+
+                            </ReactMarkdown>
+
+                          </div>
+
+                        </div>
+
+                      )
+                    }
+
+
+                    {/* ==========================================
+                        DISCLAIMER
+                    ========================================== */}
+
+                    {
+                      explanation &&
+                      explanationDisclaimer && (
+
+                        <p
+                          className="viewer__ai-hint"
+                          style={{
+                            marginTop:
+                              '10px',
+                          }}
+                        >
+
+                          {
+                            explanationDisclaimer
+                          }
+
+                        </p>
+
+                      )
+                    }
+
+                  </div>
+
+
+                  {/* ============================================
+                      DOWNLOAD REPORT
+                  ============================================ */}
+
+                  <button
+                    type="button"
+                    className="viewer__download-report"
+                    onClick={
+                      downloadAnalysisReport
+                    }
+                  >
+
+                    <FileDown
+                      size={
+                        17
+                      }
+                    />
+
+                    Download Analysis Report
+
+                  </button>
 
                 </div>
 
-                {/* Threshold */}
-
-                <div className="viewer__ai-stat">
-
-                  Threshold:
-
-                  <strong>
-                    {aiResult.threshold}
-                  </strong>
-
-                </div>
-
-                {/* Mask */}
-
-                <img
-                  src={aiResult.mask}
-                  alt="AI tumor segmentation mask"
-                  className="viewer__ai-mask"
-                />
-
-                {/* ==========================
-                    DOWNLOAD REPORT BUTTON
-                =========================== */}
-
-                <button
-                  type="button"
-                  className="viewer__download-report"
-                  onClick={
-                    downloadAnalysisReport
-                  }
-                >
-                  <FileDown size={17} />
-
-                  Download Analysis Report
-                </button>
-
-              </div>
-
-            )}
+              )
+            }
 
           </div>
 

@@ -1,112 +1,434 @@
 :root {
-  /* Design tokens — clinical workstation palette. Near-black canvas so
-     grayscale medical imagery reads with correct perceptual contrast;
-     a single cool cyan accent for active/interactive state, and a
-     clinical amber reserved only for warnings/measurements. */
+  /* ============================================================
+     MEDVISION DESIGN TOKENS
+     Clinical / radiology workstation palette
+  ============================================================ */
+
+  /* Backgrounds */
   --bg-void: #0a0d10;
   --bg-panel: #12161b;
   --bg-panel-raised: #181d24;
+  --bg-panel-hover: #1d232b;
   --bg-inset: #05070a;
+  --bg-overlay: rgba(5, 7, 10, 0.86);
+
+  /* Borders */
   --border-hairline: #232a33;
+  --border-subtle: #2a323d;
   --border-active: #2d8fa3;
 
+  /* Text */
   --text-primary: #e8edf1;
-  --text-secondary: #8b96a3;
-  --text-tertiary: #545e6a;
+  --text-secondary: #9aa5b1;
+  --text-tertiary: #606c78;
+  --text-disabled: #414a54;
+  --text-inverse: #071013;
 
+  /* Primary accent */
   --accent: #35b4c9;
+  --accent-hover: #49c3d7;
+  --accent-active: #2699ad;
   --accent-dim: #1f6b78;
+
+  --accent-soft: rgba(53, 180, 201, 0.10);
   --accent-glow: rgba(53, 180, 201, 0.18);
 
+  /* Semantic states */
+  --success: #4fbf8f;
+  --success-dim: #286e55;
+  --success-soft: rgba(79, 191, 143, 0.12);
+
+  --warning: #d69a3c;
+  --warning-dim: #846027;
+  --warning-soft: rgba(214, 154, 60, 0.12);
+
+  --error: #df5b57;
+  --error-dim: #8b3734;
+  --error-soft: rgba(223, 91, 87, 0.12);
+
+  --info: #5fa8d3;
+  --info-soft: rgba(95, 168, 211, 0.12);
+
+  /* Imaging */
   --mask-red: #e0483e;
-  --warn-amber: #d69a3c;
+  --mask-red-soft: rgba(224, 72, 62, 0.20);
 
-  --font-ui: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  --font-mono: 'JetBrains Mono', 'SF Mono', Consolas, monospace;
+  /* Shadows */
+  --shadow-panel:
+    0 8px 24px rgba(0, 0, 0, 0.28);
 
+  --shadow-focus:
+    0 0 0 3px rgba(53, 180, 201, 0.12);
+
+  /* Typography */
+  --font-ui:
+    'Inter',
+    -apple-system,
+    BlinkMacSystemFont,
+    'Segoe UI',
+    sans-serif;
+
+  --font-mono:
+    'JetBrains Mono',
+    'SF Mono',
+    Consolas,
+    monospace;
+
+  /* Radius */
+  --radius-xs: 2px;
   --radius-sm: 3px;
   --radius-md: 6px;
+  --radius-lg: 8px;
+
+  /* Spacing */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
 }
+
+
+/* ============================================================
+   BASE RESET
+============================================================ */
 
 * {
   box-sizing: border-box;
 }
 
+
 html,
 body,
 #root {
-  height: 100%;
+  min-height: 100%;
   margin: 0;
 }
 
-body {
+
+html {
   background: var(--bg-void);
-  color: var(--text-primary);
-  font-family: var(--font-ui);
-  -webkit-font-smoothing: antialiased;
 }
 
+
+body {
+  min-height: 100vh;
+
+  background:
+    radial-gradient(
+      circle at top,
+      rgba(53, 180, 201, 0.035),
+      transparent 34%
+    ),
+    var(--bg-void);
+
+  color: var(--text-primary);
+
+  font-family: var(--font-ui);
+
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+
+/* ============================================================
+   TEXT
+============================================================ */
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  color: var(--text-primary);
+}
+
+
+p {
+  color: var(--text-secondary);
+}
+
+
+small {
+  color: var(--text-tertiary);
+}
+
+
 ::selection {
+  color: var(--text-primary);
   background: var(--accent-glow);
 }
+
+
+/* ============================================================
+   LINKS
+============================================================ */
+
+a {
+  color: var(--accent);
+  text-decoration: none;
+}
+
+
+a:hover {
+  color: var(--accent-hover);
+}
+
+
+/* ============================================================
+   SCROLLBARS
+============================================================ */
 
 ::-webkit-scrollbar {
   width: 8px;
   height: 8px;
 }
+
+
 ::-webkit-scrollbar-track {
   background: transparent;
 }
+
+
 ::-webkit-scrollbar-thumb {
   background: var(--border-hairline);
   border-radius: 4px;
 }
+
+
 ::-webkit-scrollbar-thumb:hover {
   background: var(--text-tertiary);
 }
+
+
+/* ============================================================
+   BUTTON BASE
+============================================================ */
 
 button {
   font-family: inherit;
 }
 
+
+button:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+
+/* ============================================================
+   INPUTS / SELECTS
+============================================================ */
+
+input,
+select,
+textarea {
+  font-family: inherit;
+
+  color: var(--text-primary);
+
+  background: var(--bg-inset);
+
+  border:
+    1px solid
+    var(--border-hairline);
+
+  border-radius: var(--radius-md);
+
+  transition:
+    border-color 120ms ease,
+    box-shadow 120ms ease,
+    background 120ms ease;
+}
+
+
+input:hover,
+select:hover,
+textarea:hover {
+  border-color:
+    var(--border-subtle);
+}
+
+
+input:focus,
+select:focus,
+textarea:focus {
+  border-color:
+    var(--accent);
+
+  box-shadow:
+    var(--shadow-focus);
+
+  outline: none;
+}
+
+
+input::placeholder,
+textarea::placeholder {
+  color: var(--text-tertiary);
+}
+
+
+/* ============================================================
+   RANGE INPUTS
+============================================================ */
+
 input[type='range'] {
   -webkit-appearance: none;
   appearance: none;
+
   height: 3px;
-  background: var(--border-hairline);
+
+  background:
+    var(--border-hairline);
+
   border-radius: 2px;
+
   outline: none;
 }
+
+
 input[type='range']::-webkit-slider-thumb {
   -webkit-appearance: none;
   appearance: none;
+
   width: 13px;
   height: 13px;
+
   border-radius: 50%;
-  background: var(--accent);
+
+  background:
+    var(--accent);
+
   cursor: pointer;
-  border: 2px solid var(--bg-panel);
-  box-shadow: 0 0 0 1px var(--accent-dim);
+
+  border:
+    2px solid
+    var(--bg-panel);
+
+  box-shadow:
+    0 0 0 1px
+    var(--accent-dim);
 }
+
+
+input[type='range']::-webkit-slider-thumb:hover {
+  background:
+    var(--accent-hover);
+}
+
+
 input[type='range']::-moz-range-thumb {
   width: 13px;
   height: 13px;
+
   border-radius: 50%;
-  background: var(--accent);
+
+  background:
+    var(--accent);
+
   cursor: pointer;
-  border: 2px solid var(--bg-panel);
+
+  border:
+    2px solid
+    var(--bg-panel);
 }
+
+
+/* ============================================================
+   FOCUS
+============================================================ */
 
 :focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: 2px;
+  outline:
+    2px solid
+    var(--accent);
+
+  outline-offset:
+    2px;
 }
 
-@media (prefers-reduced-motion: reduce) {
+
+/* ============================================================
+   UTILITY STATE COLORS
+============================================================ */
+
+.status-success {
+  color:
+    var(--success);
+
+  background:
+    var(--success-soft);
+
+  border:
+    1px solid
+    var(--success-dim);
+}
+
+
+.status-warning {
+  color:
+    var(--warning);
+
+  background:
+    var(--warning-soft);
+
+  border:
+    1px solid
+    var(--warning-dim);
+}
+
+
+.status-error {
+  color:
+    var(--error);
+
+  background:
+    var(--error-soft);
+
+  border:
+    1px solid
+    var(--error-dim);
+}
+
+
+.status-info {
+  color:
+    var(--info);
+
+  background:
+    var(--info-soft);
+
+  border:
+    1px solid
+    var(--border-active);
+}
+
+
+/* ============================================================
+   ACCESSIBILITY
+============================================================ */
+
+@media (
+  prefers-reduced-motion:
+  reduce
+) {
+
   *,
   *::before,
   *::after {
-    animation-duration: 0.01ms !important;
-    transition-duration: 0.01ms !important;
+    animation-duration:
+      0.01ms !important;
+
+    transition-duration:
+      0.01ms !important;
+
+    animation-iteration-count:
+      1 !important;
+
+    scroll-behavior:
+      auto !important;
   }
 }
